@@ -6,10 +6,8 @@
 <meta name="theme-color" content="#ff4e00">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Photopolaroid Pro">
-<link rel="manifest" href="manifest.json">
-<link rel="apple-touch-icon" href="icon-192.png">
-<title>Photopolaroid Pro</title>
+<meta name="apple-mobile-web-app-title" content="PhotoGrid Pro">
+<title>PhotoGrid Pro</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap');
 
@@ -669,6 +667,23 @@ body.dark .page-edit-bar span{color:var(--violet);}
 }
 .pnav-thumb.active .pnav-num{color:#1D9E75;}
 
+@keyframes slideUp{from{transform:translateY(100%);opacity:0;}to{transform:translateY(0);opacity:1;}}
+
+/* ══════════════════════════════════════════ SCROLL TOP ══ */
+#scroll-top{
+  position:fixed;bottom:18px;right:14px;z-index:800;
+  width:40px;height:40px;border-radius:50%;
+  background:var(--grad-main);
+  color:white;border:none;cursor:pointer;
+  font-size:18px;font-weight:700;
+  box-shadow:0 4px 16px rgba(29,158,117,0.45);
+  display:none;align-items:center;justify-content:center;
+  transition:all 0.2s var(--spring);
+}
+#scroll-top.visible{display:flex;}
+#scroll-top:hover{transform:translateY(-3px) scale(1.08);box-shadow:0 8px 24px rgba(29,158,117,0.55);}
+#scroll-top:active{transform:scale(0.92);}
+
 /* ══════════════════════════════════════════ QUALITE ══ */
 .qual-row{display:flex;gap:7px;flex-wrap:wrap;margin-top:6px;}
 .qual-btn{
@@ -694,7 +709,7 @@ body.dark .qual-btn.sel{background:#1D9E75;color:white;border-color:#0F6E56;box-
 <body>
 
 <div class="topbar">
-  <span class="logo"><span class="logo-accent"></span>Photopolaroid Pro</span>
+  <span class="logo"><span class="logo-accent"></span>PhotoGrid Pro</span>
   <span class="sts" id="sts">0 photo</span>
   <button class="tb tb-th" id="tbtn" onclick="toggleTheme()" title="Thème">🌙</button>
   <button class="tb tb-undo" onclick="undo()">↩ Annuler</button>
@@ -905,18 +920,37 @@ body.dark .qual-btn.sel{background:#1D9E75;color:white;border-color:#0F6E56;box-
   <button class="osv" style="width:100%;margin-top:5px;" onclick="applyPopup()">&#10003; Appliquer</button>
 </div>
 
+<button id="scroll-top" onclick="window.scrollTo({top:0,behavior:'smooth'})" title="Remonter en haut">↑</button>
+
 <div id="page-nav"></div>
 
 <div class="content">
-  <div class="dropz" onclick="document.getElementById('fi').click()">
+  <div class="dropz" onclick="showPageSelectModal()">
     <div style="font-size:22px;margin-bottom:4px;">&#128247;</div>
     <strong>Appuyez ici pour ajouter vos photos</strong><br>
-    <span style="font-size:11px;color:var(--sub);margin-top:2px;display:block;">Plusieurs à la fois — remplissage automatique</span>
+    <span style="font-size:11px;color:var(--sub);margin-top:2px;display:block;">Choisissez la page puis sélectionnez vos photos</span>
   </div>
   <input type="file" id="fi" accept="image/*" multiple onchange="handleFiles(this.files)">
   <input type="file" id="fi-replace" accept="image/*" onchange="handleReplace(this.files)">
+  <input type="file" id="fi-page" accept="image/*" multiple onchange="handleFiles(this.files)">
   <div id="prog"><p id="ptxt">Génération...</p><div id="pb"><div id="pf"></div></div></div>
   <div id="pc"></div>
+</div>
+
+<!-- MODAL SÉLECTION PAGE POUR AJOUT PHOTOS -->
+<div id="modal-page-select" style="display:none;position:fixed;inset:0;background:rgba(18,35,52,0.92);backdrop-filter:blur(14px);z-index:9999;align-items:flex-start;justify-content:center;padding-top:60px;">
+  <div style="background:var(--surf);border-radius:20px;width:calc(100% - 24px);max-width:520px;padding:20px 16px 24px;box-shadow:0 8px 40px rgba(0,0,0,0.35);border:1.5px solid var(--bord);animation:popIn 0.3s var(--spring);">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+      <div>
+        <div style="font-size:14px;font-weight:800;color:var(--text);">Ajouter des photos</div>
+        <div style="font-size:11px;color:var(--sub);margin-top:2px;">Sélectionnez une ou plusieurs pages</div>
+      </div>
+      <button onclick="document.getElementById('modal-page-select').style.display='none';" style="background:rgba(225,29,72,0.1);border:none;color:#e74c3c;font-size:16px;width:28px;height:28px;border-radius:8px;cursor:pointer;font-weight:700;">✕</button>
+    </div>
+    <div id="mps-pages" style="display:flex;gap:10px;overflow-x:auto;padding-bottom:10px;margin-bottom:16px;"></div>
+    <div id="mps-sel-info" style="font-size:11px;font-weight:700;color:var(--green);margin-bottom:12px;min-height:16px;text-align:center;"></div>
+    <button id="mps-confirm" onclick="confirmPageSelectModal()" style="display:block;width:100%;padding:14px;border-radius:12px;border:none;background:var(--grad-main);color:white;font-size:14px;font-weight:800;cursor:pointer;box-shadow:0 4px 16px rgba(29,158,117,0.35);">📷 Choisir mes photos</button>
+  </div>
 </div>
 
 <div id="dls">
@@ -924,7 +958,7 @@ body.dark .qual-btn.sel{background:#1D9E75;color:white;border-color:#0F6E56;box-
     <div class="dlck">&#10003;</div>
     <h2 id="dl-title">Prêt !</h2>
     <p id="dlinfo">Fichier généré</p>
-    <a id="dlbtn" href="#" download="photopolaroid.pdf">&#8659; Télécharger</a>
+    <a id="dlbtn" href="#" download="photogrid.pdf">&#8659; Télécharger</a>
     <button class="dlbk" onclick="document.getElementById('dls').classList.remove('show')">&#8592; Retour</button>
   </div>
 </div>
@@ -1625,7 +1659,32 @@ function makePageLabel(pi,contentHtml){
     }
   };
   lbl.appendChild(span);lbl.appendChild(modBtn);
-  // Bouton déplacer page
+  // Bouton + Photos pour cette page
+  const addPhotoBtn=document.createElement('button');
+  addPhotoBtn.className='peb';
+  addPhotoBtn.style.cssText='font-size:10px;padding:4px 9px;background:rgba(29,158,117,0.15);color:var(--green);border:1px solid rgba(29,158,117,0.3);border-radius:7px;cursor:pointer;font-weight:700;';
+  addPhotoBtn.textContent='📷 + Photos';
+  addPhotoBtn.onclick=()=>{
+    window._tpi=pi;window._ti1=undefined;window._ti2=undefined;
+    const inp=document.getElementById('fi-page');inp.value='';inp.click();
+  };
+  lbl.appendChild(addPhotoBtn);
+  // Bouton supprimer toutes les photos de cette page
+  const clrPhotoBtn=document.createElement('button');
+  clrPhotoBtn.className='peb';
+  clrPhotoBtn.style.cssText='font-size:12px;padding:4px 8px;background:rgba(231,76,60,0.12);color:#e74c3c;border:1px solid rgba(231,76,60,0.3);border-radius:7px;cursor:pointer;font-weight:700;';
+  clrPhotoBtn.textContent='🗑️';
+  clrPhotoBtn.title='Supprimer toutes les photos de cette page';
+  clrPhotoBtn.onclick=()=>{
+    saveHistory();
+    if(pageMode[pi]==='lignes'){
+      pages[pi].forEach(l=>{if(Array.isArray(l))l.forEach(c=>{c.src=null;c.imgX=0;c.imgY=0;c.imgScale=1;c.rotation=0;});});
+    } else {
+      pages[pi].forEach(c=>{c.src=null;c.imgX=0;c.imgY=0;c.imgScale=1;c.rotation=0;});
+    }
+    render();
+  };
+  lbl.appendChild(clrPhotoBtn);
   const mvBtn=document.createElement('button');
   mvBtn.className='peb';
   mvBtn.style.cssText='font-size:10px;padding:4px 9px;background:rgba(100,116,139,0.18);color:var(--sub);border:1px solid var(--bord);border-radius:7px;cursor:pointer;font-weight:700;';
@@ -1988,27 +2047,133 @@ function updateStats(){
   document.getElementById('sts').textContent=photos+'/'+total+' photos';
 }
 
-// ===== FICHIERS =====
+// ===== MODAL SÉLECTION PAGE POUR AJOUT PHOTOS =====
+var _mpsSelected=[];
+
+function getPageEmptyCount(pi){
+  var empty=0,total=0;
+  if(pageMode[pi]==='lignes'){
+    (pages[pi]||[]).forEach(function(l){if(Array.isArray(l)){l.forEach(function(c){total++;if(!c.src)empty++;});}});
+  } else {
+    (pages[pi]||[]).forEach(function(c){total++;if(!c.src)empty++;});
+  }
+  return{empty,total};
+}
+
+function showPageSelectModal(){
+  _mpsSelected=[];
+  var modal=document.getElementById('modal-page-select');
+  var container=document.getElementById('mps-pages');
+  var info=document.getElementById('mps-sel-info');
+  container.innerHTML='';
+  info.textContent='Aucune page sélectionnée';
+
+  function updateTotal(){
+    if(_mpsSelected.length===0){
+      info.innerHTML='<span style="color:var(--sub);">Aucune page sélectionnée</span>';
+      document.getElementById('mps-confirm').style.opacity='0.5';
+      document.getElementById('mps-confirm').textContent='📷 Choisir mes photos';
+    } else {
+      var totalEmpty=0;
+      _mpsSelected.forEach(function(p){totalEmpty+=getPageEmptyCount(p).empty;});
+      var sorted=_mpsSelected.slice().sort(function(a,b){return a-b;});
+      info.innerHTML=
+        '<span style="color:var(--sub);font-size:10px;">Pages : '+sorted.map(function(p){return p+1;}).join(', ')+'</span>'
+        +'&nbsp;&nbsp;<span style="font-size:13px;font-weight:800;color:#1D9E75;">'+totalEmpty+' cadre'+(totalEmpty>1?'s':'')+' à remplir</span>';
+      document.getElementById('mps-confirm').style.opacity='1';
+      document.getElementById('mps-confirm').textContent='📷 Choisir mes photos ('+totalEmpty+' cadres)';
+    }
+  }
+
+  pages.forEach(function(_,pi){
+    var counts=getPageEmptyCount(pi);
+    var item=document.createElement('div');
+    item.style.cssText='display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;flex-shrink:0;';
+
+    var frame=document.createElement('div');
+    frame.style.cssText='border-radius:8px;overflow:hidden;border:2.5px solid var(--bord);transition:border-color 0.15s,box-shadow 0.15s;background:#ebebeb;position:relative;';
+
+    var cv=drawPageThumb(pi);
+    cv.style.display='block';
+    frame.appendChild(cv);
+
+    // Badge cadres vides sur la vignette
+    var badge=document.createElement('div');
+    badge.style.cssText='position:absolute;bottom:2px;right:2px;background:rgba(0,0,0,0.65);color:white;font-size:7px;font-weight:800;border-radius:4px;padding:1px 4px;font-family:"DM Mono",monospace;';
+    badge.textContent=counts.empty+'/'+counts.total;
+    frame.appendChild(badge);
+
+    var num=document.createElement('div');
+    num.style.cssText='font-size:10px;font-weight:800;color:var(--sub);font-family:"DM Mono",monospace;';
+    num.textContent='P'+(pi+1);
+
+    var lbl=document.createElement('div');
+    lbl.style.cssText='font-size:8px;font-weight:700;color:var(--sub);font-family:"DM Mono",monospace;max-width:56px;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
+    lbl.textContent=getPageNavLabel(pi);
+
+    // Nombre de cadres vides en vert sous le label
+    var cntLbl=document.createElement('div');
+    cntLbl.style.cssText='font-size:9px;font-weight:800;color:#1D9E75;font-family:"DM Mono",monospace;';
+    cntLbl.textContent=counts.empty+' vide'+(counts.empty>1?'s':'');
+
+    item.appendChild(frame);item.appendChild(num);item.appendChild(lbl);item.appendChild(cntLbl);
+
+    item.onclick=function(){
+      var idx=_mpsSelected.indexOf(pi);
+      if(idx===-1){
+        _mpsSelected.push(pi);
+        frame.style.borderColor='#1D9E75';
+        frame.style.boxShadow='0 0 0 3px rgba(29,158,117,0.25)';
+        num.style.color='#1D9E75';lbl.style.color='#1D9E75';
+        cntLbl.style.color='#0F6E56';
+      } else {
+        _mpsSelected.splice(idx,1);
+        frame.style.borderColor='var(--bord)';
+        frame.style.boxShadow='none';
+        num.style.color='var(--sub)';lbl.style.color='var(--sub)';
+        cntLbl.style.color='#1D9E75';
+      }
+      updateTotal();
+    };
+    container.appendChild(item);
+  });
+
+  document.getElementById('mps-confirm').style.opacity='0.5';
+  modal.style.display='flex';
+}
+
+function confirmPageSelectModal(){
+  if(_mpsSelected.length===0) return;
+  document.getElementById('modal-page-select').style.display='none';
+  // Trier les pages sélectionnées et préparer le placement multi-pages
+  window._mpsTargetPages=_mpsSelected.slice().sort(function(a,b){return a-b;});
+  var inp=document.getElementById('fi');inp.value='';inp.click();
+}
+
+
 // Curseur de placement partagé dans un batch
 let _placeState=null;
 
 function handleFiles(files){
-  const tpi=window._tpi,ti1=window._ti1,ti2=window._ti2;window._tpi=window._ti1=window._ti2=undefined;
+  const tpi=window._tpi,ti1=window._ti1,ti2=window._ti2;
+  const mpsPages=window._mpsTargetPages;
+  window._tpi=window._ti1=window._ti2=window._mpsTargetPages=undefined;
   const arr=Array.from(files).filter(f=>f.type.startsWith('image/'));
   if(!arr.length){document.getElementById('fi').value='';return;}
   saveHistory();
-  // Réinitialiser le curseur pour ce batch
-  // En mode grille : idx1=index cellule (c), idx2=null → on utilise ti1 comme c
-  // En mode lignes : idx1=ligne (l), idx2=cellule (c)
-  const _targetPi=tpi!==undefined?tpi:0;
-  const _isLignes=pageMode[_targetPi]==='lignes';
-  if(tpi!==undefined&&ti1!==undefined){
-    if(_isLignes){_placeState={p:_targetPi,l:ti1,c:ti2!==undefined?ti2:0};}
-    else{_placeState={p:_targetPi,l:0,c:ti1};}
+
+  // Si sélection multi-pages via modal
+  if(mpsPages&&mpsPages.length>0){
+    // Démarrer au début de la première page sélectionnée
+    _placeState={p:mpsPages[0],l:0,c:0,limitPages:mpsPages};
+  } else if(tpi!==undefined&&ti1!==undefined){
+    const _isLignes=pageMode[tpi]==='lignes';
+    if(_isLignes){_placeState={p:tpi,l:ti1,c:ti2!==undefined?ti2:0,limitPages:[tpi]};}
+    else{_placeState={p:tpi,l:0,c:ti1,limitPages:[tpi]};}
   } else {
-    _placeState={p:_targetPi,l:0,c:0};
+    _placeState={p:0,l:0,c:0};
   }
-  // Lire TOUS les fichiers d'abord, puis les placer dans l'ordre
+
   const srcs=new Array(arr.length);
   let readCount=0;
   arr.forEach((file,fi)=>{
@@ -2027,7 +2192,14 @@ function handleFiles(files){
 }
 
 function placeSrc(src){
-  for(let p=_placeState.p;p<pages.length;p++){
+  const limitPages=_placeState.limitPages;
+  // Déterminer les pages à parcourir
+  const pagesToUse=limitPages&&limitPages.length>0?limitPages:pages.map((_,i)=>i);
+
+  for(let pi=0;pi<pagesToUse.length;pi++){
+    const p=pagesToUse[pi];
+    // Ne commencer à chercher que si on est sur la page courante ou après
+    if(p<_placeState.p) continue;
     const pm=pageMode[p]==='lignes';
     if(pm){
       const pg=pages[p];
@@ -2038,9 +2210,15 @@ function placeSrc(src){
         for(let c=startC;c<pg[l].length;c++){
           if(!pg[l][c].src){
             pg[l][c].src=src;
-            if(c+1<pg[l].length){_placeState={p,l,c:c+1};}
-            else if(l+1<pg.length){_placeState={p,l:l+1,c:0};}
-            else{_placeState={p:p+1,l:0,c:0};}
+            // Calculer prochaine position
+            if(c+1<pg[l].length){_placeState={p,l,c:c+1,limitPages};}
+            else if(l+1<pg.length){_placeState={p,l:l+1,c:0,limitPages};}
+            else{
+              // Passer à la page suivante dans limitPages
+              const nextIdx=pagesToUse.indexOf(p)+1;
+              if(nextIdx<pagesToUse.length){_placeState={p:pagesToUse[nextIdx],l:0,c:0,limitPages};}
+              else{_placeState={p:p+1,l:0,c:0,limitPages};}
+            }
             return;
           }
         }
@@ -2050,13 +2228,19 @@ function placeSrc(src){
       for(let c=startC;c<pages[p].length;c++){
         if(!pages[p][c].src){
           pages[p][c].src=src;
-          if(c+1<pages[p].length){_placeState={p,l:0,c:c+1};}
-          else{_placeState={p:p+1,l:0,c:0};}
+          if(c+1<pages[p].length){_placeState={p,l:0,c:c+1,limitPages};}
+          else{
+            const nextIdx=pagesToUse.indexOf(p)+1;
+            if(nextIdx<pagesToUse.length){_placeState={p:pagesToUse[nextIdx],l:0,c:0,limitPages};}
+            else{_placeState={p:p+1,l:0,c:0,limitPages};}
+          }
           return;
         }
       }
     }
-    _placeState={p:p+1,l:0,c:0};
+    // Passer à la page suivante si celle-ci est pleine
+    const nextIdx=pagesToUse.indexOf(p)+1;
+    if(nextIdx<pagesToUse.length){_placeState={p:pagesToUse[nextIdx],l:0,c:0,limitPages};}
   }
 }
 
@@ -2256,7 +2440,7 @@ async function exportPDF(){
   if(pdfUrl)URL.revokeObjectURL(pdfUrl);
   const blob=doc.output('blob');pdfUrl=URL.createObjectURL(blob);
   const dlbtn=document.getElementById('dlbtn');
-  dlbtn.href=pdfUrl;dlbtn.setAttribute('download','photopolaroid.pdf');
+  dlbtn.href=pdfUrl;dlbtn.setAttribute('download','photogrid.pdf');
   document.getElementById('dl-title').textContent='PDF prêt !';
   document.getElementById('dlinfo').textContent=total+' photo'+(total>1?'s':'')+' — '+pages.length+' page'+(pages.length>1?'s':'');
   setTimeout(()=>{prog.style.display='none';fill.style.width='0%';document.getElementById('dls').classList.add('show');},400);
@@ -2325,11 +2509,11 @@ async function exportPNG(){
         // Qualité haute = PNG pur, autres = JPEG compressé dans canvas
         if(pngQuality==='high'){
           canvas.toBlob(blob=>{
-            const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='photopolaroid_page'+idx+'.png';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),2000);res();
+            const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='photogrid_page'+idx+'.png';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),2000);res();
           },'image/png');
         } else {
           canvas.toBlob(blob=>{
-            const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='photopolaroid_page'+idx+'.jpg';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),2000);res();
+            const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='photogrid_page'+idx+'.jpg';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),2000);res();
           },'image/jpeg',jpegQ);
         }
       });
@@ -2402,7 +2586,7 @@ async function exportWord(){
     prog.style.display='none';fill.style.width='0%';
     const blob=new Blob([html],{type:'application/vnd.ms-word;charset=utf-8'});
     const url=URL.createObjectURL(blob);
-    const a=document.createElement('a');a.href=url;a.download='photopolaroid.doc';a.click();
+    const a=document.createElement('a');a.href=url;a.download='photogrid.doc';a.click();
     setTimeout(()=>URL.revokeObjectURL(url),3000);
   },400);
 }
@@ -2465,12 +2649,12 @@ dz.addEventListener('dragleave',()=>dz.style.background='');
 dz.addEventListener('drop',ev=>{ev.preventDefault();dz.style.background='';handleFiles(ev.dataTransfer.files);});
 document.addEventListener('click',ev=>{if(!ev.target.closest('#popup')&&!ev.target.closest('.cell'))closePopup();});
 
-// Service Worker registration (PWA install)
-if('serviceWorker' in navigator){
-  window.addEventListener('load',()=>{
-    navigator.serviceWorker.register('sw.js').catch(()=>{});
-  });
-}
+// Bouton scroll-top : visible après 300px de scroll
+window.addEventListener('scroll',function(){
+  var btn=document.getElementById('scroll-top');
+  if(window.scrollY>300){btn.classList.add('visible');}
+  else{btn.classList.remove('visible');}
+});
 
 // INIT — première page 100ar (6×5 = 30 photos)
 pageMode[0]='grille';
