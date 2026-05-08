@@ -1,6 +1,6 @@
 const CACHE = 'photopolaroid-v1';
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(['./', './photopolaroid_pro.html'])));
+  e.waitUntil(caches.open(CACHE).then(c => c.addAll(['./', './index.html'])));
   self.skipWaiting();
 });
 self.addEventListener('activate', e => { e.waitUntil(clients.claim()); });

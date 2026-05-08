@@ -2,7 +2,7 @@
   "name": "Photopolaroid Pro",
   "short_name": "Polaroid",
   "description": "Créez et exportez vos grilles photos polaroid",
-  "start_url": "/photopolaroid_pro.html",
+  "start_url": "/index.html",
   "display": "standalone",
   "background_color": "#0F6E56",
   "theme_color": "#1D9E75",
